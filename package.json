@@ -1,0 +1,25 @@
+{
+	"name": "boni_homines_server",
+	"version": "0.0.1",
+	"description": "backend server for Boni Homines project",
+	"main": "server.js",
+	"scripts": {
+		"dev": "node ./dev/server.js dev",
+		"prod": "pm2 start ./prod/server.js --log-date-format='YYYY-MM-DD HH:mm'",
+		"gmdev": "node ./dev/garbage_man.js dev",
+		"gmprod": "pm2 start ./prod/garbage_man.js --log-date-format='YYYY-MM-DD HH:mm'",
+		"server": "npm run prod | npm run gmprod | pm2 monit",
+		"golive": "cp ./dev/*.js ./prod/"
+	},
+	"author": "Andreas Goebel",
+	"license": "ISC",
+	"devDependencies": {},
+	"dependencies": {
+		"agentkeepalive": "^4.0.0",
+		"fs-extra": "^7.0.0",
+		"nano": "^7.1.0",
+		"nodemailer": "^4.6.8",
+		"sanitize-html": "^1.19.1",
+		"socket.io": "^2.1.0"
+	}
+}

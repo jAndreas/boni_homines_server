@@ -1,0 +1,102 @@
+access_log off;
+
+upstream websocket_proxy_example {
+	server localhost:2244;
+	keepalive 32;
+}
+
+upstream protected_area_example {
+	server localhost:2245;
+	keepalive 32;
+}
+
+server {
+		listen 80;
+		listen [::]:80;
+		server_name example.de www.example.de;
+
+		location / {
+			rewrite ^ https://$server_name$request_uri permanent;
+		}
+}
+
+server {
+	listen 443 ssl;
+	listen [::]:443 ssl;
+	root /var/www/html/example.de/;
+
+	# Add index.php to the list if you are using PHP
+	index index.html;
+
+	server_name example.de www.example.de;
+
+	ssl_certificate			/etc/letsencrypt/live/example.de/fullchain.pem;
+	ssl_certificate_key		/etc/letsencrypt/live/example.de/privkey.pem;
+	ssl_protocols			TLSv1 TLSv1.1 TLSv1.2;
+	ssl_ciphers				HIGH:!aNULL:!MD5;
+	ssl_session_cache		shared:SSL:10m;
+	ssl_session_timeout		10m;
+
+	large_client_header_buffers 8 32k;
+
+	access_log off;
+
+	location / {
+		try_files $uri $uri/ =404;
+
+		if ($request_method = 'POST') {
+			add_header 'Access-Control-Allow-Origin' '*';
+			add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+			add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range';
+			add_header 'Access-Control-Expose-Headers' 'Content-Length,Content-Range';
+		}
+
+		if ($request_method = 'GET') {
+			add_header 'Access-Control-Allow-Origin' '*';
+			add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+			add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range';
+			add_header 'Access-Control-Expose-Headers' 'Content-Length,Content-Range';
+		}
+	}
+
+	location /socket.io/ {
+		proxy_set_header X-Forwarded-For  $proxy_add_x_forwarded_for;
+		proxy_set_header Upgrade $http_upgrade;
+		proxy_set_header Connection "upgrade";
+		proxy_buffers 8 32k;
+		proxy_buffer_size 64k;
+		proxy_pass http://websocket_proxy_example;
+		proxy_http_version 1.1;
+	}
+
+	location ~ (main-bundle\.js) {
+		expires -1;
+		add_header Cache-Control "no-cache";
+	}
+
+	location /static {
+		set $prerender 0;
+		if ($http_user_agent ~* "/bot|google|bing|msn|duckduckbot|slurp/") {
+			set $prerender 1;
+		}
+
+		if ($prerender = 0) {
+			rewrite /static/(.*)\/ $scheme://$server_name/#watch=$1 permanent;
+			return 301;
+		}
+
+		autoindex on;
+	}
+
+	location /index.html {
+		set $deliverDynamicContent 1;
+		if ($http_user_agent ~* "/bot|google|bing|msn|duckduckbot|slurp/") {
+			set $deliverDynamicContent 0;
+		}
+
+		if ($deliverDynamicContent = 1 ) {
+			rewrite ^ $scheme://$server_name/main.html permanent;
+			return 301 $scheme://$server_name/main.html;
+		}
+	}
+}
