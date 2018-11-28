@@ -3,8 +3,9 @@
 const	nano			= require( 'nano' ),
 		agentkeepalive	= require( 'agentkeepalive' ),
 		fs				= require( 'fs' ),
-		path			= require( 'path' ),
-		Crypto			= require( './crypto.js' );
+		path			= require( 'path' );
+
+const	{ extend, log }		= require( './toolkit.js' );
 
 const	exampleTemplate	=		{
 	firstName:			'',
@@ -28,15 +29,20 @@ const	exampleTemplate	=		{
 
 const	sessionCache		= Object.create( null );
 
-class CouchConnection {
-	constructor( user, DEVMODE ) {
-		let data;
+let CouchConnection = target => class extends target {
+	constructor( input = { } ) {
+		super( ...arguments );
 
-		if( DEVMODE ) {
-			console.log( 'CouchConnection is in DEVMODE.' );
-		} else {
-			console.log( 'CouchConnection is LIVE.' );
-		}
+		extend( this ).with({
+			couchUser:		'dvgadminLocal',
+			databases:		[ 'example1', 'example2' ]
+		}).and( input );
+	}
+
+	async init() {
+		super.init && await super.init( ...arguments );
+
+		let data;
 
 		try {
 			data = fs.readFileSync( path.resolve( `${ __dirname }/../couchdb/logins.json` ), 'utf-8' );
@@ -46,13 +52,9 @@ class CouchConnection {
 
 		let users	= JSON.parse( data );
 
-		if( !users[ user ] ) {
-			throw new Error( `${user} not found in logins.json` );
+		if(!users[ this.couchUser ] ) {
+			throw new Error( `${ this.couchUser } not found in logins.json` );
 		}
-
-		let couchConfig	= {
-			auth:	users[ user ]
-		};
 
 		let performanceAgent	= new agentkeepalive({
 			maxSockets:				50,
@@ -61,21 +63,25 @@ class CouchConnection {
 		});
 
 		this.couch = nano({
-			url:				`http://${ users[ user ].name }:${ users[ user ].pass }@${ users[ user ].server }:${ users[ user ].port }`,
+			url:				`http://${ users[ this.couchUser ].name }:${ users[ this.couchUser ].pass }@${ users[ this.couchUser ].server }:${ users[ this.couchUser ].port }`,
 			requestDefaults:	{
 				agent:	performanceAgent
 			}
 		});
 
-		Object.assign( this, {
-			crypto:								new Crypto(),
-			DEVMODE:							DEVMODE,
-			databases:							[ 'example1', 'example2' ]
-		});
+		try {
+			this.setupDatabaseLinks();
+		} catch( ex ) {
+			log( `Error while setting up CouchDB links: ${ ex.message }`, 'red' );
+		}
 
-		this.setupDatabaseLinks();
+		if( this.DEVMODE ) {
+			log( 'CouchConnection is in DEVMODE.', 'yellow' );
+		} else {
+			log( 'CouchConnection is LIVE.', 'red' );
+		}
 
-		console.log('Connection to CouchDB was established.');
+		log( 'Connection to CouchDB was established.', 'green' );
 	}
 
 	setupDatabaseLinks() {
@@ -165,6 +171,6 @@ class CouchConnection {
 		let couchData = await this.couch.uuids( max );
 		return couchData.uuids.length === 1 ? couchData.uuids[ 0 ] : couchData.uuids;
 	}
-}
+};
 
 module.exports = exports = CouchConnection;

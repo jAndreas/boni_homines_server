@@ -2,9 +2,13 @@
 
 const	crypto = require( 'crypto' );
 
-class Crypto {
+let Crypto = target => class extends target {
 	constructor() {
+		super( ...arguments );
+	}
 
+	async init() {
+		super.init && await super.init( ...arguments );
 	}
 
 	getSalt() {
