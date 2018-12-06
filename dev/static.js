@@ -1,6 +1,7 @@
 'use strict';
 
-const	PuppeTeer	= require( 'puppeteer' );
+const	PuppeTeer	= require( 'puppeteer' ),
+		fs			= require( 'fs' );
 
 const	{ extend, log }		= require( './toolkit.js' );
 
@@ -14,6 +15,12 @@ let Static = target => class extends target {
 
 	async init() {
 		super.init && await super.init( ...arguments );
+
+		/*console.log( `Generating landing pages and other pre-rendered static data...\n-----\n` );
+		await this.createIndexPage();
+		await this.unlinkAllStaticContent();
+		await this.createStaticIndexPage();
+		console.log( `\n-----\nDone! Launching Server...\n` );*/
 	}
 
 	async unlinkAllStaticContent() {

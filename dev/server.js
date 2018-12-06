@@ -41,12 +41,6 @@ class Server extends Composition( CouchConnection, MailService, ClientConnection
 
 		this.socket.on( 'connection', this.newConnection.bind( this ) );
 
-		/*console.log( `Generating landing pages and other pre-rendered static data...\n-----\n` );
-		await this.createIndexPage();
-		await this.unlinkAllStaticContent();
-		await this.createStaticIndexPage();
-		console.log( `\n-----\nDone! Launching Server...\n` );*/
-
 		process.on( 'SIGINT', this.onProcessExit.bind( this ) );
 		process.on( 'uncaughtException', this.onProcessExit.bind( this ) );
 		process.on( 'SIGTERM', this.onProcessExit.bind( this ) );
