@@ -11,7 +11,7 @@ let ClientConnection = target => class extends target {
 		super( ...arguments );
 
 		extend( this ).with({
-			socket:	socketio.listen( defaultPort || input.port, {
+			socket:	socketio.listen( input.port || defaultPort, {
 						pingTimeout:		Seconds( 10 ),
 						pingInterval:		Seconds( 30 ),
 						transports:			[ 'websocket', 'polling' ]
