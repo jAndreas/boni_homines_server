@@ -1,7 +1,7 @@
 {
-	"name": "boni_homines_server",
+	"name": "boilerplate_server",
 	"version": "0.0.1",
-	"description": "backend server for Boni Homines project",
+	"description": "Boilerplate Server Code",
 	"main": "server.js",
 	"scripts": {
 		"dev": "node ./dev/server.js dev",
@@ -20,6 +20,7 @@
 		"nano": "^7.1.0",
 		"nodemailer": "^4.6.8",
 		"sanitize-html": "^1.19.1",
+		"puppeteer": "^1.10.0",
 		"socket.io": "^2.1.0"
 	}
 }

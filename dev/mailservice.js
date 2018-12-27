@@ -4,14 +4,26 @@ const	nodemailer	= require( 'nodemailer' ),
 		fs			= require( 'fs' ),
 		path		= require( 'path' );
 
-const	senderAddress	= 'andreas@bonihomines.de';
+const	{ extend, log }	= require( './toolkit.js' );
 
-class MailService {
-	constructor( hostname, DEVMODE ) {
-		if( DEVMODE ) {
-			console.log( 'MailService is in DEVMODE.' );
+const	senderAddress	= 'andreas@example.de';
+
+let MailService = target => class extends target {
+	constructor( input = { } ) {
+		super( ...arguments );
+
+		extend( this ).with({
+			mailHostName: 'local'
+		}).and( input );
+	}
+
+	async init() {
+		super.init && await super.init( ...arguments );
+
+		if( this.DEVMODE ) {
+			log( 'MailService is in DEVMODE.', 'yellow' );
 		} else {
-			console.log( 'MailService is LIVE.' );
+			log( 'MailService is LIVE.', 'red' );
 		}
 
 		let data, hosts;
@@ -23,25 +35,24 @@ class MailService {
 			throw new Error( 'Error while reading ../mailservice/hosts.json: ' + ex );
 		}
 
-		if( !hosts[ hostname ] ) {
-			throw new Error( `${hostname} not found in hosts.json` );
+		if( !hosts[ this.mailHostName ] ) {
+			throw new Error( `${ this.mailHostName } not found in hosts.json` );
 		}
 
 		Object.assign( this, {
-			DEVMODE:			DEVMODE,
-			transporter:		nodemailer.createTransport( hosts[ hostname ] )
+			transporter:		nodemailer.createTransport( hosts[ this.mailHostName ] )
 		});
 
-		console.log( 'SMTP Transporter created, verifying connection...' );
+		log( 'SMTP Transporter created, verifying connection...', 'yellow' );
 
-		this.verify();
+		await this.verify();
 	}
 
 	async sendMail({ toList, subject = '', text = '', html = '' }) {
 		toList = Array.isArray( toList ) ? toList : [ toList ];
 
-		if( this.DEVMODE ) {
-			//return 'DEVMODE';
+		if( this.this.DEVMODE ) {
+			//return 'this.DEVMODE';
 		}
 
 		if( toList.length === 0 ) {
@@ -78,9 +89,9 @@ class MailService {
 	async verify() {
 		try {
 			await this.transporter.verify();
-			console.log( '...SMTP Connection established and ready.' );
+			log( 'SMTP Connection established and ready.', 'green' );
 		} catch( ex ) {
-			console.error( '...SMTP Connection error: ', ex );
+			console.error( 'SMTP Connection error: ', ex );
 		}
 	}
 
@@ -95,6 +106,6 @@ class MailService {
 			}
 		};
 	}
-}
+};
 
 module.exports = exports = MailService;
